@@ -1,4 +1,4 @@
-/**
+﻿/**
  *	Editor Wizard for easily managing global defines in Unity
  *	@khenkel
  */
@@ -6,14 +6,13 @@
 using UnityEngine;
 using UnityEditor;
 using System.IO;
-using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 
 public class DefineManager : EditorWindow
 {
 	const string DEF_MANAGER_PATH = "Assets/Editor/DefineManager.cs";
-	
+
 	enum Compiler
 	{
 		CSharp,
@@ -26,15 +25,15 @@ public class DefineManager : EditorWindow
 	// http://forum.unity3d.com/threads/93901-global-define/page2
 	// Do not modify these paths
 	const int COMPILER_COUNT = 4;
-	const string CSHARP_PATH 		= "Assets/smcs.rsp";
-	const string EDITOR_PATH 		= "Assets/gmcs.rsp";
-	const string UNITYSCRIPT_PATH 	= "Assets/us.rsp";
-	const string BOO_PATH 			= "Assets/boo.rsp";
+	const string CSHARP_PATH = "Assets/smcs.rsp";
+	const string EDITOR_PATH = "Assets/gmcs.rsp";
+	const string UNITYSCRIPT_PATH = "Assets/us.rsp";
+	const string BOO_PATH = "Assets/boo.rsp";
 
-	List<string> csDefines = new List<string>(); 
-	List<string> booDefines = new List<string>(); 
-	List<string> usDefines = new List<string>(); 
-	List<string> editorDefines = new List<string>(); 
+	List<string> csDefines = new List<string>();
+	List<string> booDefines = new List<string>();
+	List<string> usDefines = new List<string>();
+	List<string> editorDefines = new List<string>();
 
 	[MenuItem("Window/Define Manager")]
 	public static void OpenDefManager()
@@ -59,21 +58,21 @@ public class DefineManager : EditorWindow
 	Vector2 scroll = Vector2.zero;
 	void OnGUI()
 	{
-		Color oldColor = GUI.backgroundColor;
+		var oldColor = GUI.backgroundColor;
 
 		GUILayout.BeginHorizontal();
-		for(int i = 0; i < COMPILER_COUNT; i++)	
+		for (int i = 0; i < COMPILER_COUNT; i++)
 		{
-			if(i == (int)compiler)
+			if (i == (int)compiler)
 				GUI.backgroundColor = Color.gray;
 
 			GUIStyle st;
-			switch(i)
+			switch (i)
 			{
 				case 0:
 					st = EditorStyles.miniButtonLeft;
 					break;
-				case COMPILER_COUNT-1:
+				case COMPILER_COUNT - 1:
 					st = EditorStyles.miniButtonRight;
 					break;
 				default:
@@ -81,7 +80,7 @@ public class DefineManager : EditorWindow
 					break;
 			}
 
-			if(GUILayout.Button( ((Compiler)i).ToString(), st))
+			if (GUILayout.Button(((Compiler)i).ToString(), st))
 			{
 				compiler = (Compiler)i;
 				ParseDefineFiles();
@@ -90,8 +89,8 @@ public class DefineManager : EditorWindow
 			GUI.backgroundColor = oldColor;
 		}
 		GUILayout.EndHorizontal();
-		
-		switch(compiler)
+
+		switch (compiler)
 		{
 			case Compiler.CSharp:
 				defs = csDefines;
@@ -113,55 +112,57 @@ public class DefineManager : EditorWindow
 		GUILayout.Label(compiler.ToString() + " User Defines");
 
 		scroll = GUILayout.BeginScrollView(scroll);
-		for(int i = 0; i < defs.Count; i++)
+		for (int i = 0; i < defs.Count; i++)
 		{
 			GUILayout.BeginHorizontal();
-				
-				defs[i] = EditorGUILayout.TextField(defs[i]);
-				
-				GUI.backgroundColor = Color.red;
-				if(GUILayout.Button("x", GUIStyle.none, GUILayout.MaxWidth(18)))
-					defs.RemoveAt(i);
-				GUI.backgroundColor = oldColor;
+
+			defs[i] = EditorGUILayout.TextField(defs[i]);
+
+			GUI.backgroundColor = Color.red;
+			if (GUILayout.Button("x", GUIStyle.none, GUILayout.MaxWidth(18)))
+				defs.RemoveAt(i);
+			GUI.backgroundColor = oldColor;
 
 			GUILayout.EndHorizontal();
 
 		}
-		
+
 		GUILayout.Space(4);
 
 		GUI.backgroundColor = Color.cyan;
-		if(GUILayout.Button("Add"))	
+		if (GUILayout.Button("Add"))
 			defs.Add("NEW_DEFINE");
 
 		GUILayout.EndScrollView();
 
 
 		GUILayout.BeginHorizontal();
-			GUI.backgroundColor = Color.green;
-			if( GUILayout.Button("Apply") )
+		GUI.backgroundColor = Color.green;
+		if (GUILayout.Button("Apply"))
+		{
+			SetDefines(compiler, defs);
+			AssetDatabase.ImportAsset(DEF_MANAGER_PATH, ImportAssetOptions.ForceUpdate);
+			ParseDefineFiles();
+		}
+
+		GUI.backgroundColor = Color.red;
+		if (GUILayout.Button("Apply All", GUILayout.MaxWidth(64)))
+		{
+			for (int i = 0; i < COMPILER_COUNT; i++)
 			{
-				SetDefines(compiler, defs);
+				SetDefines((Compiler)i, defs);
 				AssetDatabase.ImportAsset(DEF_MANAGER_PATH, ImportAssetOptions.ForceUpdate);
 				ParseDefineFiles();
 			}
-		
-			GUI.backgroundColor = Color.red;
-			if(GUILayout.Button("Apply All", GUILayout.MaxWidth(64)))
-				for(int i = 0; i < COMPILER_COUNT; i++)
-				{
-					SetDefines((Compiler)i, defs);
-					AssetDatabase.ImportAsset(DEF_MANAGER_PATH, ImportAssetOptions.ForceUpdate);
-					ParseDefineFiles();		
-				}
-		
+		}
+
 		GUILayout.EndHorizontal();
 		GUI.backgroundColor = oldColor;
 	}
 
 	void SetDefines(Compiler compiler, List<string> defs)
 	{
-		switch(compiler)
+		switch (compiler)
 		{
 			case Compiler.CSharp:
 				WriteDefines(CSHARP_PATH, defs);
@@ -170,7 +171,7 @@ public class DefineManager : EditorWindow
 			case Compiler.UnityScript:
 				WriteDefines(UNITYSCRIPT_PATH, defs);
 				break;
-			
+
 			case Compiler.Boo:
 				WriteDefines(BOO_PATH, defs);
 				break;
@@ -183,17 +184,17 @@ public class DefineManager : EditorWindow
 
 	List<string> ParseRspFile(string path)
 	{
-		if(!File.Exists(path))
+		if (!File.Exists(path))
 			return new List<string>();
 
-		string[] lines = File.ReadAllLines(path);
-		List<string> defs = new List<string>();
+		var lines = File.ReadAllLines(path);
+		var defs = new List<string>();
 
-		foreach(string cheese in lines)
+		foreach (string cheese in lines)
 		{
-			if(cheese.StartsWith("-define:"))
+			if (cheese.StartsWith("-define:"))
 			{
-				defs.AddRange( cheese.Replace("-define:", "").Split(';') );
+				defs.AddRange(cheese.Replace("-define:", "").Split(';'));
 			}
 		}
 
@@ -202,21 +203,25 @@ public class DefineManager : EditorWindow
 
 	void WriteDefines(string path, List<string> defs)
 	{
-		if(defs.Count < 1 && File.Exists(path))
+		if (defs.Count < 1)
 		{
-			File.Delete(path);
-			File.Delete(path + ".meta");
-			AssetDatabase.Refresh();
+			if (File.Exists(path))
+			{
+				File.Delete(path);
+				File.Delete(path + ".meta");
+				AssetDatabase.Refresh();
+			}
+
 			return;
 		}
 
-		StringBuilder sb = new StringBuilder();
+		var sb = new StringBuilder();
 		sb.Append("-define:");
-		
-		for(int i = 0; i < defs.Count; i++)
+
+		for (int i = 0; i < defs.Count; i++)
 		{
 			sb.Append(defs[i]);
-			if(i < defs.Count-1) sb.Append(";");
+			if (i < defs.Count - 1) sb.Append(";");
 		}
 
 		using (StreamWriter writer = new StreamWriter(path, false))
